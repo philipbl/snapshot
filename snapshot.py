@@ -1,11 +1,29 @@
 import time
 import os
+import argparse
 from foscam import FoscamCamera
 
-url = '192.168.0.98:8110'
-user_name = 'test'
-password = 'test'
-interval = 10
+parser = argparse.ArgumentParser(description='Takes a snapshot of your Foscam at every interval.')
+
+parser.add_argument('-l', '--url', required=True,
+                   help='The URL for the camera. Do not include protocol (http). ' \
+                   'Example: 192.168.0.51:8996')
+
+parser.add_argument('-u', '--user_name', required=True,
+                   help='The user name for the camera.')
+
+parser.add_argument('-p', '--password', required=True,
+                   help='The password for the camera.')
+
+parser.add_argument('-i', '--interval', required=True, type=int,
+                   help='The interval to take snapshots (in seconds).')
+
+args = parser.parse_args()
+
+url = args.url
+user_name = args.user_name
+password = args.password
+interval = args.interval
 
 camera = FoscamCamera(url, user_name, password)
 
