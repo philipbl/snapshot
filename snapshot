@@ -29,29 +29,34 @@ interval = args.interval
 
 camera = FoscamCamera(url, user_name, password)
 
-while True:
-    try:
-        image = camera.snapshot()
-    except:
-        print "ERROR: Could not connect to camera."
-        pass
+print "Press CTRL-C to stop."
 
-    now = time.localtime()
-    time_str = time.strftime("%Y-%m-%d_%H:%M%:%S", now)
-    directory = time.strftime("%Y/%m/%d", now)
-    file_name = "{0}/snapshot-{1}.jpg".format(directory, time_str)
+try:
+    while True:
+        try:
+            image = camera.snapshot()
+        except:
+            print "ERROR: Could not connect to camera."
+            pass
 
-    try:
-        # Create a folder for images for that day
-        if not os.path.exists(directory):
-            os.makedirs(directory)
+        now = time.localtime()
+        time_str = time.strftime("%Y-%m-%d_%H:%M%:%S", now)
+        directory = time.strftime("%Y/%m/%d", now)
+        file_name = "{0}/snapshot-{1}.jpg".format(directory, time_str)
 
-        with open(file_name, 'w') as f:
-            f.write(image)
+        try:
+            # Create a folder for images for that day
+            if not os.path.exists(directory):
+                os.makedirs(directory)
 
-        print "Saved {0}".format(file_name)
-    except:
-        print "ERROR: Could not save image."
-        pass
+            with open(file_name, 'w') as f:
+                f.write(image)
 
-    time.sleep(interval)
+            print "Saved {0}".format(file_name)
+        except:
+            print "ERROR: Could not save image."
+            pass
+
+        time.sleep(interval)
+except KeyboardInterrupt:
+    pass
