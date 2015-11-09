@@ -13,12 +13,12 @@ CGI documentation.
 Ken Ramsey, 18Feb2013
 """
 
-import urllib
+import urllib.request
 import time
 from threading import Thread
 import sys
 
-   
+
 def dummy_videoframe_handler(frame, userdata=None):
     """test video frame handler. It assumes the userdata coming
     in is a Counter object with an increment method and a count method"""
@@ -47,7 +47,7 @@ class FoscamCamera(object):
     STOP_LEFT = 5
     RIGHT = 6
     STOP_RIGHT = 7
-    
+
     def __init__(self, url='', user='', pwd=''):
         super(FoscamCamera, self).__init__()
         self._user = user
@@ -66,7 +66,7 @@ class FoscamCamera(object):
 
     def url(self):
         return self._url
-    
+
     def setUser(self, usr):
         self._user = usr
 
@@ -86,11 +86,11 @@ class FoscamCamera(object):
     def move(self, direction):
         cmd = {'command':direction}
         f = self.sendCommand('decoder_control.cgi', cmd)
-        
+
     def snapshot(self):
         f = self.sendCommand('snapshot.cgi', {})
-        return f.read()                                                     
-    
+        return f.read()
+
     def startVideo(self, callback=None, userdata=None):
         if not self.isPlaying():
             cmds = { 'resolution':32, 'rate':0 }
@@ -105,7 +105,7 @@ class FoscamCamera(object):
         if self.isPlaying():
             self.setIsPlaying(0)
             self.videothread.join()
-        
+
     def sendCommand(self, cgi, parameterDict):
         url = 'http://%s/%s?user=%s&pwd=%s' % (self.url(),
                                                cgi,
@@ -114,42 +114,42 @@ class FoscamCamera(object):
         for param in parameterDict:
             url = url + '&%s=%s' % (param, parameterDict[param])
 
-        return urllib.urlopen(url)
-    
+        return urllib.request.urlopen(url)
+
 if __name__ == '__main__':
 
     TESTURL = '192.168.0.120'
 
-    print
-    print 'testing the Foscam camera code'
-    print
-    
+    print()
+    print('testing the Foscam camera code')
+    print()
+
     foscam = FoscamCamera(TESTURL, 'admin')
 
     def move_a_little(fos, go, stop):
         fos.move(go)
         time.sleep(2)
-        print ' - stopping move'
+        print(' - stopping move')
         fos.move(stop)
-        
-    print 'moving up'
+
+    print('moving up')
     move_a_little(foscam, foscam.UP, foscam.STOP_UP)
-    print 'moving down'
+    print('moving down')
     move_a_little(foscam, foscam.DOWN, foscam.STOP_DOWN)
-    print 'moving left'
+    print('moving left')
     move_a_little(foscam, foscam.LEFT, foscam.STOP_LEFT)
-    print 'moving right'
+    print('moving right')
     move_a_little(foscam, foscam.RIGHT, foscam.STOP_RIGHT)
 
-    print
-    print 'taking a few snapshots'
+    print()
+    print('taking a few snapshots')
     for i in xrange(1, 11):
         data = foscam.snapshot()
         open('snapshot-%02d.jpg' % i, 'wb').write(data)
         sys.stdout.write('wrote snapshot %d\r' % i)
         sys.stdout.flush()
 
-    print
+    print()
 
     class Counter(object):
         def __init__(self):
@@ -160,21 +160,21 @@ if __name__ == '__main__':
         def count(self):
             return self._count
 
-    print       
-    print 'playing a little video (30 seconds worth)'
+    print()
+    print('playing a little video (30 seconds worth)')
     counter = Counter()
     foscam.startVideo(dummy_videoframe_handler, counter)
     time.sleep(30)
-    print
-    print 'stopping video'
+    print()
+    print('stopping video')
     foscam.stopVideo()
-    print
+    print()
 
     nframes = counter.count() - 1
 
-    print
-    print nframes, 'frames in ~30 secs for ~', nframes/30.0, 'fps'
-    print
-    print 'done!'
-    
-    
+    print()
+    print( nframes, 'frames in ~30 secs for ~', nframes/30.0, 'fps')
+    print()
+    print('done!')
+
+
