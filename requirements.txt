@@ -1,0 +1,8 @@
+arrow==0.7.0
+docopt==0.6.2
+Pillow==3.0.0
+python-dateutil==2.4.2
+PyYAML==3.11
+requests==2.8.1
+six==1.10.0
+tempdir==0.6
