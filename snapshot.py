@@ -25,9 +25,7 @@ from docopt import docopt
 from foscam import FoscamCamera
 from glob import glob
 
-# Add output option to tell which folder to out images to
 
-# def run(url, user_name, password, interval, scheduler, directory='.', max_keep=None):
 def run(scheduler, **kwargs):
     try:
         url = kwargs['url']
@@ -54,13 +52,13 @@ def run(scheduler, **kwargs):
         to_delete = snaps.popleft()
         os.remove(to_delete)
 
-    def _run():
+    def snapshot():
         try:
             image = camera.snapshot()
         except Exception as ex:
             print(ex)
             print("ERROR: Could not connect to camera.")
-            scheduler.enter(interval, 1, _run)
+            scheduler.enter(interval, 1, snapshot)
             return
 
         now = arrow.now()
@@ -82,22 +80,27 @@ def run(scheduler, **kwargs):
         except Exception as ex:
             print(ex)
             print("ERROR: Could not save image.")
-            scheduler.enter(interval, 1, _run)
+            scheduler.enter(interval, 1, snapshot)
             return
 
-        scheduler.enter(interval, 1, _run)
+        scheduler.enter(interval, 1, snapshot)
 
-    _run()
-    scheduler.run()
+    snapshot()
+
 
 if __name__ == '__main__':
     args = docopt(__doc__, version='snapshot 1.0')
     print(args)
 
-    run(sched.scheduler(),
+    scheduler = sched.scheduler()
+    run(scheduler,
         url=args['<url>'],
         user_name=args['<user_name>'],
         password=args['<password>'],
         interval=int(args['<interval>']),
         directory=args['<directory>'] if args['-d'] else '.',
         max_keep=int(args['<max_keep>']) if args['--max'] else None)
+
+    scheduler.run()
+
+
