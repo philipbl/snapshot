@@ -6,3 +6,5 @@ PyYAML==3.11
 requests==2.8.1
 six==1.10.0
 tempdir==0.6
+Twisted==15.4.0
+zope.interface==4.1.3

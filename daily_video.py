@@ -120,7 +120,7 @@ def run(config):
     key = config['email_settings']['key']
 
     server_url = config['server_settings']['url']
-    server_url = server_url + ':' + config['server_settings']['port']
+    server_url = '{}:{}'.format(server_url, config['server_settings']['port'])
 
     def _run():
         images = get_images(*get_range(start_time, end_time), frames_path)
