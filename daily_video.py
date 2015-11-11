@@ -73,10 +73,10 @@ def parse_time(time_str):
 
 def get_run_time(time):
     run_again = arrow.now().replace(days=1,
-                                    hour=end_time.hour,
-                                    minute=end_time.minute + 5,
-                                    second=end_time.second,
-                                    microsecond=end_time.microsecond)
+                                    hour=time.hour,
+                                    minute=time.minute + 5,
+                                    second=time.second,
+                                    microsecond=time.microsecond)
 
     return run_again.timestamp
 
