@@ -48,7 +48,7 @@ def get_images(start, stop, directory):
 def send_email(tos, message, key):
     request_url = 'https://api.mailgun.net/v3/mg.lundrigan.org/messages'
     request = requests.post(request_url, auth=('api', key), data={
-        'from': 'Hank Cam <alerts@lundrigan.org>',
+        'from': 'Hank Cam <hank_cam@lundrigan.org>',
         'to': ', '.join(tos),
         'subject': 'Hank\'s Sleep Video ({})'.format(arrow.now('US/Mountain').strftime('%m/%d/%Y')),
         'text': message,
