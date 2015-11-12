@@ -11,6 +11,7 @@ import logging
 import logging.config
 import snapshot
 import os.path
+import os
 from glob import iglob
 from itertools import product
 from twisted.web.server import Site
@@ -81,6 +82,17 @@ def parse_time(time_str):
     raise arrow.parser.ParserError()
 
 
+def delete_old(video_path, max_keep):
+    videos = [(os.stat(video).st_mtime, video)
+              for video in iglob(video_path + '/*.mp4')]
+    videos = sorted(videos)
+
+    while len(videos) > max_keep:
+        video = videos.pop(0)[1]
+        logger.info("Deleting %s", video)
+        os.remove(video)
+
+
 def get_run_time(stop_time):
     now = arrow.now()
     run_again = now.replace(hour=stop_time.hour,
@@ -101,11 +113,13 @@ def read_configuration(config_file):
 def run_snapshot(config):
     snapshot.run(**config['camera_settings'])
 
+
 def run_webserver(config):
     port = config['server_settings']['port']
     path = config['video_settings']['directory']
 
     reactor.listenTCP(port, Site(File(path)))
+
 
 def run(config):
     frames_path = config['camera_settings']['directory']
@@ -114,6 +128,7 @@ def run(config):
     duration = config['video_settings']['duration']
     start_time = parse_time(config['video_settings']['start_time'])
     end_time = parse_time(config['video_settings']['end_time'])
+    max_keep = config['video_settings']['max_keep']
 
     send_list = config['email_settings']['send_list']
     message = config['email_settings']['message']
@@ -126,6 +141,8 @@ def run(config):
         images = get_images(*get_range(start_time, end_time), frames_path)
         link = video_maker.create_video(images, duration, video_path)
         send_email(send_list, message.format(server_url + '/' + os.path.basename(link)), key)
+
+        delete_old(video_path, max_keep)
 
         next_run = get_run_time(end_time)
         reactor.callLater(next_run, _run)
