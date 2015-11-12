@@ -21,7 +21,7 @@ def _add_timestamp(files, temp_path):
         timestamp = timestamp.to('US/Mountain')
         return timestamp.strftime("%I:%M %p")
 
-    font = ImageFont.truetype("SanFranciscoDisplay-Regular.otf", 30)
+    font = ImageFont.truetype("static/SanFranciscoDisplay-Regular.otf", 30)
 
     # Populate temporary folder
     for i, file_name in enumerate(files):
@@ -53,6 +53,10 @@ def _make_video(frames_path, duration, video_path):
 
 
 def create_video(files, duration, video_path):
+    # Create a folder if necessary
+    if not os.path.exists(video_path):
+        os.makedirs(video_path)
+
     with tempdir.TempDir() as t:
         frames_path = _add_timestamp(files, t)
-        _make_video(frames_path, duration, video_path)
+        return _make_video(frames_path, duration, video_path)

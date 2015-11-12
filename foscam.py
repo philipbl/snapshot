@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
 A simple module to exploit my Foscam F1891W pan/tilt camera.
 

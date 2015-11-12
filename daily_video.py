@@ -50,9 +50,11 @@ def send_email(tos, message, key):
     request = requests.post(request_url, auth=('api', key), data={
         'from': 'Hank Cam <alerts@lundrigan.org>',
         'to': ', '.join(tos),
-        'subject': 'New Move-in',
-        'text': message
+        'subject': 'Hank\'s Sleep Video ({})'.format(arrow.now('US/Mountain').strftime('%m/%d/%Y')),
+        'text': message,
+        'html': message
     })
+    print(request.text)
 
 
 def parse_time(time_str):
@@ -69,6 +71,16 @@ def parse_time(time_str):
     raise arrow.parser.ParserError()
 
 
+def get_run_time(time):
+    run_again = arrow.now().replace(days=1,
+                                    hour=end_time.hour,
+                                    minute=end_time.minute + 5,
+                                    second=end_time.second,
+                                    microsecond=end_time.microsecond)
+
+    return run_again.timestamp
+
+
 def read_configuration(config_file):
     return yaml.load(open(config_file))
 
@@ -78,7 +90,7 @@ def run_snapshot(config, scheduler):
 
 
 def run(config, scheduler):
-    frames_path = config['file_paths']['video_out_path']
+    frames_path = config['file_paths']['frames_path']
     video_path = config['file_paths']['video_out_path']
 
     duration = config['video_settings']['duration']
@@ -87,19 +99,22 @@ def run(config, scheduler):
 
     send_list = config['email_settings']['send_list']
     message = config['email_settings']['message']
+    key = config['email_settings']['key']
+
+    url = config['camera_settings']['url']
 
     def _run():
         images = get_images(*get_range(start_time, end_time), frames_path)
         link = video_maker.create_video(images, duration, video_path)
-        # send_email(link, send_list, message)
-        scheduler.enterabs()
+        send_email(send_list, message.format(url + '/' + link), key)
 
-    # scheduler.enterabs()
+        scheduler.enterabs(get_run_time(end_time), 1, _run)
 
+    scheduler.enterabs(get_run_time(end_time), 1, _run,)
 
 
 config = read_configuration('daily_video.yaml')
-scheduler = sched.scheduler()
+scheduler = sched.scheduler(timefunc=lambda : arrow.now().timestamp)
 
 run_snapshot(config, scheduler)
 run(config, scheduler)
