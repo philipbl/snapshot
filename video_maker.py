@@ -5,6 +5,7 @@ import hashlib
 import os
 import os.path
 import tempdir
+import logging
 from subprocess import Popen
 from PIL import Image
 from PIL import ImageFont
@@ -13,6 +14,7 @@ from tempfile import NamedTemporaryFile
 
 ffmpeg_command = "/usr/local/bin/ffmpeg -framerate {} -pattern_type glob -i '{}' -c:v libx264 -r 30 -pix_fmt yuv420p {}/{}"
 
+logger = logging.getLogger("snapshot." + __name__)
 
 def _add_timestamp(files, temp_path):
     def get_time(file_name):
@@ -55,8 +57,16 @@ def _make_video(frames_path, duration, video_path):
 def create_video(files, duration, video_path):
     # Create a folder if necessary
     if not os.path.exists(video_path):
+        logging.debug("Creating video path: %s", video_path)
         os.makedirs(video_path)
 
     with tempdir.TempDir() as t:
+        logging.debug("Created temporary directory: %s", t)
+
         frames_path = _add_timestamp(files, t)
-        return _make_video(frames_path, duration, video_path)
+        logging.debug("Frames path: %s", frames_path)
+
+        video_path = _make_video(frames_path, duration, video_path)
+        logging.info("Video path: %s", video_path)
+
+        return video_path

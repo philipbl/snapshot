@@ -33,6 +33,7 @@ def get_range(start_time, end_time):
                                   second=start_time.second,
                                   microsecond=start_time.microsecond)
 
+    logger.debug("start_time: %s\tend_time: %s", start_time, end_time)
     return yesterday.timestamp, today.timestamp
 
 
@@ -46,6 +47,8 @@ def get_images(start, stop, directory):
 
 
 def send_email(tos, message, key):
+    logger.info("Sending email")
+
     request_url = 'https://api.mailgun.net/v3/mg.lundrigan.org/messages'
     request = requests.post(request_url, auth=('api', key), data={
         'from': 'Hank Cam <hank_cam@lundrigan.org>',
@@ -54,7 +57,8 @@ def send_email(tos, message, key):
         'text': message,
         'html': message
     })
-    print(request.text)
+
+    logger.info("Email response:\n%s", request.text)
 
 
 def parse_time(time_str):
@@ -64,10 +68,13 @@ def parse_time(time_str):
         time_format = '{}:{} {}'.format(h, m, a)
 
         try:
+            logger.debug("Trying time format: %s", time_format)
             return arrow.get(time_str, time_format)
         except arrow.parser.ParserError:
+            logger.debug("Time format did not work.")
             pass
 
+    logger.error("Could not find proper time format!")
     raise arrow.parser.ParserError()
 
 
@@ -108,9 +115,14 @@ def run(config, scheduler):
         link = video_maker.create_video(images, duration, video_path)
         send_email(send_list, message.format(url + '/' + link), key)
 
-        scheduler.enterabs(get_run_time(end_time), 1, _run)
+        next_run = get_run_time(end_time)
+        scheduler.enterabs(next_run, 1, _run)
+        logger.info("Running again at %s", arrow.get(next_run).to('US/Mountain'))
 
-    scheduler.enterabs(get_run_time(end_time), 1, _run,)
+
+    next_run = get_run_time(end_time)
+    scheduler.enterabs(next_run, 1, _run)
+    logger.info("Running again at %s", arrow.get(next_run).to('US/Mountain'))
 
 
 config = read_configuration('daily_video.yaml')

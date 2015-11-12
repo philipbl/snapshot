@@ -16,15 +16,17 @@ Options:
     <interval>      How often to take a snapshot (in seconds) [default: 60]
 """
 
-import time
-import os
 import arrow
+import logging
+import os
 import sched
+import time
 from collections import deque
 from docopt import docopt
 from foscam import FoscamCamera
 from glob import glob
 
+logger = logging.getLogger("snapshot." + __name__)
 
 def run(scheduler, **kwargs):
     try:
@@ -35,6 +37,7 @@ def run(scheduler, **kwargs):
         directory = kwargs.get('directory', '.')
         max_keep = kwargs.get('max_keep')
     except Exception as e:
+        logger.error("Error: Must pass {} as a parameter.".format(e))
         print("Error: Must pass {} as a parameter.".format(e))
         exit()
 
@@ -42,6 +45,7 @@ def run(scheduler, **kwargs):
 
     # Create a folder if necessary
     if not os.path.exists(directory):
+        logger.debug("Creating directory %s", directory)
         os.makedirs(directory)
 
     # Keep track of already existing snapshots in that folder
@@ -51,23 +55,25 @@ def run(scheduler, **kwargs):
     while max_keep is not None and len(snaps) > max_keep:
         to_delete = snaps.popleft()
         os.remove(to_delete)
+        logger.debug("Deleted %s", to_delete)
 
     def snapshot():
         try:
             image = camera.snapshot()
         except Exception as ex:
-            print(ex)
             print("ERROR: Could not connect to camera.")
+            logger.error("ERROR: Could not connect to camera. %s", ex)
             scheduler.enter(interval, 1, snapshot)
             return
 
         now = arrow.now()
         file_name = "{0}/snapshot-{1}.jpg".format(directory, now.timestamp)
+        logger.debug("File name: %s", file_name)
 
         try:
             with open(file_name, 'wb') as f:
                 f.write(image)
-            print("Saved {0}".format(file_name))
+            logger.info("Saved %s", file_name)
 
             # Add it to previous snaps
             snaps.append(file_name)
@@ -76,13 +82,16 @@ def run(scheduler, **kwargs):
             while max_keep is not None and len(snaps) > max_keep:
                 to_delete = snaps.popleft()
                 os.remove(to_delete)
+                logger.debug("Deleted %s", to_delete)
 
         except Exception as ex:
-            print(ex)
             print("ERROR: Could not save image.")
+            logger.error("ERROR: Could not connect to camera. %s", ex)
+
             scheduler.enter(interval, 1, snapshot)
             return
 
+        logger.debug("Scheduling again for %s seconds", interval)
         scheduler.enter(interval, 1, snapshot)
 
     snapshot()
@@ -90,7 +99,7 @@ def run(scheduler, **kwargs):
 
 if __name__ == '__main__':
     args = docopt(__doc__, version='snapshot 1.0')
-    print(args)
+    logger.debug(args)
 
     scheduler = sched.scheduler()
     run(scheduler,
