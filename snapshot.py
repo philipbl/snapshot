@@ -19,16 +19,17 @@ Options:
 import arrow
 import logging
 import os
-import sched
 import time
 from collections import deque
 from docopt import docopt
 from foscam import FoscamCamera
 from glob import glob
+from twisted.internet import task
+from twisted.internet import reactor
 
 logger = logging.getLogger("snapshot." + __name__)
 
-def run(scheduler, **kwargs):
+def run(**kwargs):
     try:
         url = kwargs['url']
         user_name = kwargs['user_name']
@@ -63,7 +64,6 @@ def run(scheduler, **kwargs):
         except Exception as ex:
             print("ERROR: Could not connect to camera.")
             logger.error("ERROR: Could not connect to camera. %s", ex)
-            scheduler.enter(interval, 1, snapshot)
             return
 
         now = arrow.now()
@@ -87,29 +87,25 @@ def run(scheduler, **kwargs):
         except Exception as ex:
             print("ERROR: Could not save image.")
             logger.error("ERROR: Could not connect to camera. %s", ex)
-
-            scheduler.enter(interval, 1, snapshot)
             return
 
         logger.debug("Scheduling again for %s seconds", interval)
-        scheduler.enter(interval, 1, snapshot)
 
-    snapshot()
+    t = task.LoopingCall(snapshot)
+    t.start(interval)
 
 
 if __name__ == '__main__':
     args = docopt(__doc__, version='snapshot 1.0')
     logger.debug(args)
 
-    scheduler = sched.scheduler()
-    run(scheduler,
-        url=args['<url>'],
+    run(url=args['<url>'],
         user_name=args['<user_name>'],
         password=args['<password>'],
         interval=int(args['<interval>']),
         directory=args['<directory>'] if args['-d'] else '.',
         max_keep=int(args['<max_keep>']) if args['--max'] else None)
 
-    scheduler.run()
+    reactor.run()
 
 

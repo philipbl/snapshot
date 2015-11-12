@@ -6,13 +6,16 @@ import arrow
 import re
 import configparser
 import requests
-import sched
 import yaml
 import logging
 import logging.config
 import snapshot
+import os.path
 from glob import iglob
 from itertools import product
+from twisted.web.server import Site
+from twisted.web.static import File
+from twisted.internet import reactor
 
 
 # Log configuration
@@ -78,25 +81,33 @@ def parse_time(time_str):
     raise arrow.parser.ParserError()
 
 
-def get_run_time(time):
-    run_again = arrow.now().replace(days=1,
-                                    hour=time.hour,
-                                    minute=time.minute + 5,
-                                    second=time.second,
-                                    microsecond=time.microsecond)
+def get_run_time(stop_time):
+    now = arrow.now()
+    run_again = now.replace(hour=stop_time.hour,
+                            minute=stop_time.minute + 5,
+                            second=stop_time.second,
+                            microsecond=stop_time.microsecond)
 
-    return run_again.timestamp
+    if run_again < now:
+        run_again = run_again.replace(days=1)
+
+    return run_again.timestamp - now.timestamp
 
 
 def read_configuration(config_file):
     return yaml.load(open(config_file))
 
 
-def run_snapshot(config, scheduler):
-    snapshot.run(scheduler, **config['camera_settings'])
+def run_snapshot(config):
+    snapshot.run(**config['camera_settings'])
 
+def run_webserver(config):
+    port = config['server_settings']['port']
+    path = config['video_settings']['directory']
 
-def run(config, scheduler):
+    reactor.listenTCP(port, Site(File(path)))
+
+def run(config):
     frames_path = config['camera_settings']['directory']
 
     video_path = config['video_settings']['directory']
@@ -108,27 +119,34 @@ def run(config, scheduler):
     message = config['email_settings']['message']
     key = config['email_settings']['key']
 
-    url = config['camera_settings']['url']
+    server_url = config['server_settings']['url']
+    server_url = server_url + ':' + config['server_settings']['port']
 
     def _run():
         images = get_images(*get_range(start_time, end_time), frames_path)
         link = video_maker.create_video(images, duration, video_path)
-        send_email(send_list, message.format(url + '/' + link), key)
+        send_email(send_list, message.format(server_url + '/' + os.path.basename(link)), key)
 
         next_run = get_run_time(end_time)
-        scheduler.enterabs(next_run, 1, _run)
-        logger.info("Running again at %s", arrow.get(next_run).to('US/Mountain'))
-
+        reactor.callLater(next_run, _run)
+        logger.info("Running again in %s seconds", next_run)
 
     next_run = get_run_time(end_time)
-    scheduler.enterabs(next_run, 1, _run)
-    logger.info("Running again at %s", arrow.get(next_run).to('US/Mountain'))
+    reactor.callLater(next_run, _run)
+    logger.info("Running again in %s seconds", next_run)
 
 
+logger.info("Reading configuration")
 config = read_configuration('daily_video.yaml')
-scheduler = sched.scheduler(timefunc=lambda : arrow.now().timestamp)
 
-run_snapshot(config, scheduler)
-run(config, scheduler)
+logger.info("Starting web server")
+run_webserver(config)
 
-scheduler.run()
+logger.info("Starting snapshot")
+run_snapshot(config)
+
+logger.info("Starting daily video")
+run(config)
+
+logger.info("Running")
+reactor.run()
