@@ -90,9 +90,9 @@ def run_snapshot(config, scheduler):
 
 
 def run(config, scheduler):
-    frames_path = config['file_paths']['frames_path']
-    video_path = config['file_paths']['video_out_path']
+    frames_path = config['camera_settings']['directory']
 
+    video_path = config['video_settings']['directory']
     duration = config['video_settings']['duration']
     start_time = parse_time(config['video_settings']['start_time'])
     end_time = parse_time(config['video_settings']['end_time'])
