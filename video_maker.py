@@ -63,9 +63,11 @@ def create_video(files, duration, video_path):
     with tempdir.TempDir() as t:
         logging.debug("Created temporary directory: %s", t)
 
+        logging.info("Adding timestamps to frames")
         frames_path = _add_timestamp(files, t)
         logging.debug("Frames path: %s", frames_path)
 
+        logging.info("Making video")
         video_path = _make_video(frames_path, duration, video_path)
         logging.info("Video path: %s", video_path)
 
