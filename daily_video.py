@@ -153,17 +153,22 @@ def run(config):
     logger.info("Running again in %s seconds", next_run)
 
 
-logger.info("Reading configuration")
-config = read_configuration('daily_video.yaml')
+try:
+    raise Exception("test")
 
-logger.info("Starting web server")
-run_webserver(config)
+    logger.info("Reading configuration")
+    config = read_configuration('daily_video.yaml')
 
-logger.info("Starting snapshot")
-run_snapshot(config)
+    logger.info("Starting web server")
+    run_webserver(config)
 
-logger.info("Starting daily video")
-run(config)
+    logger.info("Starting snapshot")
+    run_snapshot(config)
 
-logger.info("Running")
-reactor.run()
+    logger.info("Starting daily video")
+    run(config)
+
+    logger.info("Running")
+    reactor.run()
+except:
+    logger.exception("Error occurred when running")
