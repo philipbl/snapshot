@@ -154,8 +154,6 @@ def run(config):
 
 
 try:
-    raise Exception("test")
-
     logger.info("Reading configuration")
     config = read_configuration('daily_video.yaml')
 
